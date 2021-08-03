@@ -754,6 +754,11 @@ while True:
                     pygame.display.quit()
                     game.status = 1
                     game.update()
+                if event.button == 4:
+                    if stop == False:
+                        stop = True
+                    else:
+                        stop = False
             if event.type == JOYHATMOTION:
                 if event.value[0] == 0:
                     if event.value[1] == 0:
