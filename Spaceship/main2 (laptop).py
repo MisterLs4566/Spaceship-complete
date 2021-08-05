@@ -60,7 +60,7 @@ class Ufo (pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, speed, scale):
         pygame.sprite.Sprite.__init__(self)
         self.scale = scale
-        self.image = pygame.image.load("sprites/ufo.PNG").convert()
+        self.image = pygame.image.load("sprites/ufo.PNG")#.convert()
         self.image = pygame.transform.scale(self.image, (self.scale, self.scale))
         self.rect = self.image.get_rect()
         self.pos_x = pos_x
@@ -705,6 +705,8 @@ while True:
         #for enemy in enemies:
             #pygame.draw.rect(window, (255, 255, 255), enemy.rect)
         #pygame.draw.rect(window, (255, 255, 255), player.laser.rect)
+        fontsurfobj_fps = fontobj.render("fps: " + str(round(clock.get_fps())), True, (255, 255, 255))
+        window.blit(fontsurfobj_fps, (10, 10))
         window.blit(player.fontsurfobj, (width-60, height-15))
         fontsurfobj5 = fontobj.render("LEVEL " + str(level), True, (255, 255, 255))
         window.blit(fontsurfobj5, (10, height-15))
@@ -754,11 +756,6 @@ while True:
                     pygame.display.quit()
                     game.status = 1
                     game.update()
-                if event.button == 4:
-                    if stop == False:
-                        stop = True
-                    else:
-                        stop = False
             if event.type == JOYHATMOTION:
                 if event.value[0] == 0:
                     if event.value[1] == 0:
@@ -815,6 +812,11 @@ while True:
                 window.fill((0, 0, 0))
                 game.manager()
             if event.type == JOYBUTTONDOWN:
+                if event.button == 4:
+                    if stop == False:
+                        stop = True
+                    else:
+                        stop = False
                 if event.button == 5:
                     level = 0
                     points = 0
