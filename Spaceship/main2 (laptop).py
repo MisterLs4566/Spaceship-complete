@@ -31,6 +31,8 @@ pickup_sound = pygame.mixer.Sound("sounds/Pickup_Coin70.wav")
 pickup_sound.set_volume(volume)
 explosion_sound3 = pygame.mixer.Sound("sounds/Explosion42.wav")
 explosion_sound3.set_volume(volume)
+explosion_sound4 = pygame.mixer.Sound("sounds/Explosion52.wav")
+explosion_sound4.set_volume(volume)
 randomize_sound = pygame.mixer.Sound("sounds/Randomize35.wav")
 randomize_sound.set_volume(volume)
 sounds = [laser_sound, explosion_sound1, explosion_sound2]
@@ -162,15 +164,23 @@ class Laser(pygame.sprite.Sprite):
             for enemy in enemies:
                 if self.instantiate == True:
                     if self.rect.colliderect(enemy.rect):
+                        enemy.hearts -= 1
                         if self.play == True:
                             self.play = False
-                            explosion_sound2.play()
-                        game.create_star(enemy.rect.x, enemy.rect.y, 2000)
+                            if enemy.hearts == 0:
+                                explosion_sound2.play()
+                                game.create_star(enemy.rect.x, enemy.rect.y, 2000)
+                            else:
+                                explosion_sound3.play()
                         self.instantiate = False
-                        all_sprites.remove(enemy)
-                        all_sprites.remove(enemy.laser)
-                        enemy.removed = True
-                        enemies.remove(enemy)
+                        if enemy.hearts == 0:
+                            enemy.killed = True
+                            enemy.removed = True
+                            enemies.remove(enemy)
+                        else:
+                            enemy.destroy += 1
+                            enemy.image = enemy.destroy_list[enemy.destroy-1]
+                            enemy.image = pygame.transform.scale(enemy.image, (enemy.scale, enemy.scale))
                         if len(enemies) == 0:
                             randomize_sound.play()
                             lives = player.hearts
@@ -285,8 +295,30 @@ class Enemy(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, speed, image):
         pygame.sprite.Sprite.__init__(self)
         global dif
-        self.image = pygame.image.load(image)
+        if dif == 3:
+            self.type = 2
+        else:
+            self.type = 1
+        self.picture = pygame.image.load(image)
+        self.image = self.picture
         self.image = pygame.transform.scale(self.image, (50, 50))
+        self.scale = 50
+        self.explosion_1 = pygame.image.load("sprites/explosion_1.png")
+        self.explosion_2 = pygame.image.load("sprites/explosion_2.png")
+        self.explosion_3 = pygame.image.load("sprites/explosion_3.png")
+        self.explosion_4 = pygame.image.load("sprites/explosion_4.png")
+        self.normal = pygame.image.load("sprites/enemy.png")
+        self.destroy_1 = pygame.image.load("sprites/destroy1.png")
+        self.destroy_2 = pygame.image.load("sprites/destroy2.png")
+        self.destroy_3 = pygame.image.load("sprites/destroy3.png")
+        self.explosion_list = [self.explosion_1, self.explosion_2, self.explosion_3, self.explosion_4]
+        self.destroy_list = [self.destroy_1, self.destroy_2, self.destroy_3]
+        self.explosion = 1
+        self.destroy = 1
+        if dif == 3:
+            self.hearts = 3
+        else:
+            self.hearts = 1
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.scale = 50
@@ -299,6 +331,7 @@ class Enemy(pygame.sprite.Sprite):
         self.direction = "right"
         self.laser = Laser(self.pos_x, self.pos_y, 7, -1)
         self.movement = True
+        self.killed = False
         if dif == 1:
             self.spawnrate = 1500
         elif dif == 2:
@@ -308,6 +341,10 @@ class Enemy(pygame.sprite.Sprite):
         self.play = True
         self.x = 0
         self.removed = False
+        self.explosion_move = False
+        self.check1 = 0
+        self.check2 = True
+        self.speed_b = self.speed
     def shoot(self):
         self.x = randint(0, self.spawnrate)
         if self.x == self.spawnrate:
@@ -338,13 +375,33 @@ class Enemy(pygame.sprite.Sprite):
         global plane
         global points
         global dif
+        if self.killed == True:
+            if self.laser in all_sprites:
+                all_sprites.remove(self.laser)
+            if self.explosion_move == False:
+                self.explosion_move = True
+                self.speed = 0
+                self.steps = 0
+                self.rect.x -= 10
+            if self.check2 == True:
+                self.image = self.explosion_list[int(self.explosion)]
+                self.image = pygame.transform.scale(self.image, (75, 75))
+            self.check1 = int(self.explosion)
+            if self.explosion <= len(self.explosion_list)-1:
+                self.explosion += 0.2
+            else:
+                all_sprites.remove(self)
+            if self.check1 != int(self.explosion):
+                self.check2 = True
+            else:
+                self.check2 = False
         if self.movement == True:
             self.rect.x += self.speed * velocity
             old_time = pygame.time.get_ticks()
             self.movement = False
         if time-old_time > 10:
             self.movement = True
-        if self.rect.y > 450:
+        if self.rect.y >= player.rect.y:
             if self.play == True:
                 self.play = False
                 explosion_sound1.play()
@@ -360,49 +417,53 @@ class Enemy(pygame.sprite.Sprite):
             self.play = True
             player.speed = backup
         if self.rect.x > game.width-50:
-            velocity = 0
-            velocity = 0
-            self.rect.x = game.width-50
-            if direction == "right":
-                direction = "left"
-                for enemy in enemies:
-                    enemy.rect.y += enemy.steps
-                    enemy.laser.rect.y += enemy.steps
-                    if dif > 1:
-                        if enemy.rect.y > 200:
-                            enemy.speed +=1
-                if ufo.spawn == True:
-                    self.ufo()
-                for enemy in enemies:
-                    for position in positions_x:
-                        if enemy.rect.x > position:
-                            if (enemy.rect.x - position) < 5:
-                                enemy.rect.x = position
-                        elif position > enemy.rect.x:
-                            if (position - enemy.rect.x) < 5:
-                                enemy.rect.x = position
+            if self.killed == False:
+                velocity = 0
+                velocity = 0
+                self.rect.x = game.width-50
+                if direction == "right":
+                    direction = "left"
+                    for enemy in enemies:
+                        enemy.rect.y += enemy.steps
+                        enemy.laser.rect.y += enemy.steps
+                        if dif > 1:
+                            if enemy.rect.y > 200:
+                                enemy.speed_b += 0.5
+                                enemy.speed = int(enemy.speed_b)
+                    if ufo.spawn == True:
+                        self.ufo()
+                    for enemy in enemies:
+                        for position in positions_x:
+                            if enemy.rect.x > position:
+                                if (enemy.rect.x - position) < 5:
+                                    enemy.rect.x = position
+                            elif position > enemy.rect.x:
+                                if (position - enemy.rect.x) < 5:
+                                    enemy.rect.x = position
                 velocity = -1
         if self.rect.x < 0:
-            velocity = 0
-            self.rect.x = 0
-            if direction == "left":
-                direction = "right"
-                for enemy in enemies:
-                    enemy.rect.y += enemy.steps
-                    enemy.laser.rect.y += enemy.steps
-                    if dif > 1:
-                        if enemy.rect.y > 200:
-                            enemy.speed +=1
-                if ufo.spawn == True:
-                    self.ufo()
-                for enemy in enemies:
-                    for position in positions_x:
-                        if enemy.rect.x > position:
-                            if (enemy.rect.x - position) < 5:
-                                enemy.rect.x = position
-                        elif position > enemy.rect.x:
-                            if (position - enemy.rect.x) < 5:
-                                enemy.rect.x = position
+            if self.killed == False:
+                velocity = 0
+                self.rect.x = 0
+                if direction == "left":
+                    direction = "right"
+                    for enemy in enemies:
+                        enemy.rect.y += enemy.steps
+                        enemy.laser.rect.y += enemy.steps
+                        if dif > 1:
+                            if enemy.rect.y > 200:
+                                enemy.speed_b += 0.5
+                                enemy.speed = int(enemy.speed_b)
+                    if ufo.spawn == True:
+                        self.ufo()
+                    for enemy in enemies:
+                        for position in positions_x:
+                            if enemy.rect.x > position:
+                                if (enemy.rect.x - position) < 5:
+                                    enemy.rect.x = position
+                            elif position > enemy.rect.x:
+                                if (position - enemy.rect.x) < 5:
+                                    enemy.rect.x = position
                 velocity = 1
         if self.rect.colliderect(player.rect):
             if self.play == True:
@@ -445,6 +506,7 @@ class Game():
         self.width = width
         self.height = height
         self.create_window = False
+        self.dif = 0
     def quit(self):
         sys.exit()
     def create_enemies(self, number, speed):
@@ -466,6 +528,7 @@ class Game():
                 enemies[x] = Enemy(positions_x[pos_x], pos_y, speed, "sprites/enemy.png")
             else:
                 enemies[x] = Enemy(positions_x[pos_x], pos_y, speed, "sprites/enemy2.png")
+                enemies[x].hearts = 1
             pos_x+=1
             if quantity/4 in numbers:
                 counter+=1
@@ -486,6 +549,7 @@ class Game():
         global points
         global stars
         global necessary
+        self.dif = 1
         plane = 10
         self.status = 3
         self.counter += 1
@@ -518,6 +582,7 @@ class Game():
         global plane
         global points
         global necessary
+        self.dif = 2
         plane = 10
         self.status = 3
         self.counter += 1
@@ -550,6 +615,7 @@ class Game():
         global plane
         global points
         global necessary
+        self.dif = 3
         plane = 10
         self.status = 3
         self.counter += 1
@@ -572,7 +638,7 @@ class Game():
                 player = Player(7, 3, "sprites/spaceship2.png")
             ufo = Ufo(-50, 0, 3, 50)
             all_sprites.add(ufo, player.laser, player)
-            self.create_enemies(20, 5)
+            self.create_enemies(12, 5)
     def game_over(self):
         self.status = 4
         all_sprites.empty()
@@ -774,6 +840,7 @@ while True:
                     player.joystick = True
                     player.joystick_d = "left"
             if event.type == QUIT:
+                level = 1
                 stop = False
                 pygame.display.quit()
                 game.status = 1
@@ -829,6 +896,7 @@ while True:
                     game.status = 1
                     game.update()
             if event.type == QUIT:
+                level = 1
                 stop = False
                 pygame.display.quit()
                 game.status = 1
