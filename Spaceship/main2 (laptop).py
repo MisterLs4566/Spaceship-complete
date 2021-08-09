@@ -388,7 +388,7 @@ class Enemy(pygame.sprite.Sprite):
                 self.image = pygame.transform.scale(self.image, (75, 75))
             self.check1 = int(self.explosion)
             if self.explosion <= len(self.explosion_list)-1:
-                self.explosion += 0.2
+                self.explosion += 0.4
             else:
                 all_sprites.remove(self)
             if self.check1 != int(self.explosion):
