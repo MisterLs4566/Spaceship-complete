@@ -265,16 +265,16 @@ class Player(pygame.sprite.Sprite):
             if self.joystick_d == "down":
                 if self.rect.y <= game.height - 70:
                     self.rect.y += self.speed
-        if keyboard.is_pressed("w"):
+        if keyboard.is_pressed("w") or keyboard.is_pressed("up"):
             if self.rect.y >= 10:
                 self.rect.y -= self.speed
-        if keyboard.is_pressed("a"):
+        if keyboard.is_pressed("a") or keyboard.is_pressed("left"):
             if self.rect.x >= 10:
                 self.rect.x -= self.speed
-        if keyboard.is_pressed("s"):
+        if keyboard.is_pressed("s") or keyboard.is_pressed("down"):
             if self.rect.y <= game.height - 70:
                 self.rect.y += self.speed
-        if keyboard.is_pressed("d"):
+        if keyboard.is_pressed("d") or keyboard.is_pressed("right"):
             if self.rect.x <= game.width - 70:
                 self.rect.x += self.speed
         if self.laser.instantiate == False:
